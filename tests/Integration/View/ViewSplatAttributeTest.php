@@ -23,6 +23,9 @@ final class ViewSplatAttributeTest extends FrameworkIntegrationTestCase
 
         $html = $this->render($view);
         ray($html);
+        $x = fn () => ray(get_func_args());
+        $arr = ['id' => 'test1', 'data-info' => 'extra'];
+        $fn(...$arr, one: 'one', two: 'two');
 
         $this->assertStringContainsString(
             'id="test1"',

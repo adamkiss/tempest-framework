@@ -25,6 +25,8 @@ final class ViewComponentElement implements Element, WithToken
     use IsElement;
 
     private ImmutableArray $dataAttributes;
+    
+    private ImmutableArray $splatAttributes;
 
     private ImmutableArray $expressionAttributes;
 
@@ -44,12 +46,17 @@ final class ViewComponentElement implements Element, WithToken
 
         $this->dataAttributes = arr($attributes)
             ->filter(fn (string $_, string $key) => ! str_starts_with($key, ':'))
+            ->filter(fn (string $_, string $key) => ! str_starts_with($key, '...'))
             ->mapWithKeys(fn (string $value, string $key) => yield str($key)->camel()->toString() => $value);
 
         $this->expressionAttributes = arr($attributes)
             ->filter(fn (string $_, string $key) => str_starts_with($key, ':'))
             ->filter(fn (string $_, string $key) => ! in_array($key, [':if', ':else', ':elseif', ':foreach', ':forelse'], strict: true))
             ->mapWithKeys(fn (string $value, string $key) => yield str($key)->camel()->ltrim(':')->toString() => $value ?: 'true');
+
+        $this->splatAttributes = arr($attributes)
+            ->filter(fn (string $_, string $key) => str_starts_with($key, '...'))
+            ->mapWithKeys(fn (string $value, string $key) => yield ltrim($key, '.') => $value);
 
         $this->scopedVariables = arr();
     }
@@ -145,12 +152,17 @@ final class ViewComponentElement implements Element, WithToken
                     $this->dataAttributes->isNotEmpty() ? ', ' . $this->dataAttributes->map(fn (string $_value, string $key) => "\${$key}")->implode(', ') : '',
                     $this->expressionAttributes->isNotEmpty() ? ', ' . $this->expressionAttributes->map(fn (string $_value, string $key) => "\${$key}")->implode(', ') : '',
                     $this->scopedVariables->isNotEmpty() ? ', ' . $this->scopedVariables->map(fn (string $name) => "\${$name}")->implode(', ') : '',
+                    // $this->splatAttributes->isNotEmpty() ? ', ' . $this->splatAttributes->map(fn (string $name, string $key) => "{$key}")->implode(', ') : '',
+                    // TODO: need to somehow get the splatted attributes into the function signature
                 ),
             )
             ->append(
                 // Close and call the current scope
                 sprintf(
-                    '<?php })(attributes: %s, slots: %s, scopedVariables: [%s] + ($scopedVariables ?? $this->currentView?->data ?? []) %s %s) ?>',
+                    '<?php })(%s attributes: %s, slots: %s, scopedVariables: [%s] + ($scopedVariables ?? $this->currentView?->data ?? []) %s %s) ?>',
+                    $this->splatAttributes->isNotEmpty()
+                        ? $this->splatAttributes->map(fn ($_, string $name) => "...{$name}")->implode(', ') . ','
+                        : '',
                     ViewObjectExporter::export($this->viewComponentAttributes),
                     ViewObjectExporter::export($slots),
                     $this->scopedVariables->isNotEmpty()
@@ -198,6 +210,8 @@ final class ViewComponentElement implements Element, WithToken
                 return $compiled;
             },
         );
+
+        ray($compiled);
 
         return $this->compiler->compile($compiled->toString());
     }
