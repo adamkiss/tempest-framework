@@ -1,0 +1,2 @@
+<x-splat-test class="x-splat-test" id="test1" data-style="background: red;">Hello, Test1!</x-splat-test>
+<x-splat-test class="x-splat-test" id="test2" data-style="background: blue;">Hello, Test2!</x-splat-test>

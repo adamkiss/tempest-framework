@@ -19,6 +19,7 @@ final readonly class AttributeFactory
             $attributeName === ':forelse' => new ForelseAttribute(),
             str_starts_with($attributeName, '::') => new EscapedExpressionAttribute($attributeName),
             str_starts_with($attributeName, ':') => new ExpressionAttribute($attributeName),
+            str_starts_with($attributeName, '...') => new SplatAttribute($attributeName),
             default => new DataAttribute($attributeName),
         };
     }
