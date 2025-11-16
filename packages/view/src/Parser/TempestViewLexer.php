@@ -19,7 +19,7 @@ final class TempestViewLexer
     }
 
     public function lex(): TokenCollection
-    {
+    { 
         $tokens = [];
 
         while ($this->current) {
